@@ -20,6 +20,6 @@ def run_accuracy_agent(question: str, response: str, reference: str, context: st
             parsed_json["missing_information"] = "Failed to extract missing information."
             
         return parsed_json
-    except Exception as e:
-        logger.error(f"Accuracy Agent failed: {e}")
-        return {"score": 0, "evidence": "Error", "missing_information": str(e)}
+    except Exception as z:
+        logger.error(f"Accuracy Agent failed: {z}")
+        return {"score": 0, "evidence": "Error", "missing_information": str(z)}
