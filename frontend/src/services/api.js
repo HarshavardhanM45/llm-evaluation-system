@@ -11,3 +11,19 @@ export const evaluateAll = async (data) => {
     throw error;
   }
 };
+
+export const evaluateBatch = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axios.post(`${API_URL}/evaluate/batch`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error calling evaluate batch API:", error);
+    throw error;
+  }
+};

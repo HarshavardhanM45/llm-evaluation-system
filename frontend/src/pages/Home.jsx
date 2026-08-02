@@ -6,12 +6,14 @@ import ReasonCard from '../components/ReasonCard';
 import ClaimTable from '../components/ClaimTable';
 import LoadingSpinner from '../components/LoadingSpinner';
 import OverallSummary from '../components/OverallSummary';
+import BatchEvaluation from '../components/BatchEvaluation';
 import { evaluateAll } from '../services/api';
-import { Target, CheckSquare, BrainCircuit, Info, AlertOctagon } from 'lucide-react';
+import { Target, CheckSquare, BrainCircuit, Info, AlertOctagon, ListChecks } from 'lucide-react';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const [mode, setMode] = useState('single'); // 'single' or 'batch'
   
   // Smooth scroll to results
   useEffect(() => {
@@ -42,73 +44,103 @@ export default function Home() {
           <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-6">
             AI Response Evaluation
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Test and benchmark LLM outputs using three independent AI judges for relevance, factual accuracy, and hallucination detection.
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+            Test and benchmark LLM outputs using AI judges for relevance, accuracy, completeness, and hallucination detection.
           </p>
+          
+          <div className="flex justify-center space-x-4 mb-8">
+            <button 
+              className={`px-6 py-2 rounded-full font-medium ${mode === 'single' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              onClick={() => setMode('single')}
+            >
+              Single Evaluation
+            </button>
+            <button 
+              className={`px-6 py-2 rounded-full font-medium ${mode === 'batch' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              onClick={() => setMode('batch')}
+            >
+              Batch Evaluation
+            </button>
+          </div>
         </header>
 
-        <section className="max-w-4xl mx-auto mb-16">
-          <InputForm onSubmit={handleEvaluate} isLoading={loading} />
-        </section>
+        {mode === 'single' ? (
+          <>
+            <section className="max-w-4xl mx-auto mb-16">
+              <InputForm onSubmit={handleEvaluate} isLoading={loading} />
+            </section>
 
-        {loading && (
-          <div className="mb-16">
-            <LoadingSpinner />
-          </div>
-        )}
+            {loading && (
+              <div className="mb-16">
+                <LoadingSpinner />
+              </div>
+            )}
 
-        {results && !loading && (
-          <section className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700" aria-label="Evaluation Results">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ScoreCard 
-                title="Relevance" 
-                score={results.relevance?.score || 0} 
-                icon={Target} 
-                colorClass="bg-blue-600" 
-              />
-              <ScoreCard 
-                title="Accuracy" 
-                score={results.accuracy?.score || 0} 
-                icon={CheckSquare} 
-                colorClass="bg-green-600" 
-              />
-              <ScoreCard 
-                title="Hallucination" 
-                score={results.hallucination?.hallucination_score || 0} 
-                icon={BrainCircuit} 
-                colorClass="bg-red-600" 
-              />
-            </div>
+            {results && !loading && (
+              <section className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700" aria-label="Evaluation Results">
+                
+                <OverallSummary results={results} />
 
-            <OverallSummary results={results} />
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <ScoreCard 
+                    title="Relevance" 
+                    score={results.relevance?.score || 0} 
+                    icon={Target} 
+                    colorClass="bg-blue-600" 
+                  />
+                  <ScoreCard 
+                    title="Accuracy" 
+                    score={results.accuracy?.score || 0} 
+                    icon={CheckSquare} 
+                    colorClass="bg-green-600" 
+                  />
+                  <ScoreCard 
+                    title="Completeness" 
+                    score={results.completeness?.score || 0} 
+                    icon={ListChecks} 
+                    colorClass="bg-purple-600" 
+                  />
+                  <ScoreCard 
+                    title="Hallucination" 
+                    score={results.hallucination?.hallucination_score || 0} 
+                    icon={BrainCircuit} 
+                    colorClass="bg-red-600" 
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ReasonCard 
-                title="Relevance Reasoning" 
-                content={results.relevance?.reason} 
-                icon={Info} 
-              />
-              <ReasonCard 
-                title="Accuracy Evidence" 
-                content={results.accuracy?.evidence} 
-                icon={CheckSquare} 
-              />
-              <ReasonCard 
-                title="Missing Information" 
-                content={results.accuracy?.missing_information} 
-                icon={AlertOctagon} 
-              />
-              <ReasonCard 
-                title="Hallucination Analysis" 
-                content={results.hallucination?.reason} 
-                icon={BrainCircuit} 
-              />
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <ReasonCard 
+                    title="Relevance Reasoning" 
+                    content={results.relevance?.reason} 
+                    icon={Info} 
+                  />
+                  <ReasonCard 
+                    title="Accuracy Evidence" 
+                    content={results.accuracy?.evidence} 
+                    icon={CheckSquare} 
+                  />
+                  <ReasonCard 
+                    title="Completeness Analysis" 
+                    content={results.completeness?.reason + (results.completeness?.omissions?.length ? "\nOmissions: " + results.completeness.omissions.join(", ") : "")} 
+                    icon={ListChecks} 
+                  />
+                  <ReasonCard 
+                    title="Hallucination Analysis" 
+                    content={results.hallucination?.reason} 
+                    icon={BrainCircuit} 
+                  />
+                </div>
 
-            <ClaimTable 
-              supportedClaims={results.hallucination?.supported_claims}
-              unsupportedClaims={results.hallucination?.unsupported_claims}
-            />
+                <ClaimTable 
+                  supportedClaims={results.hallucination?.supported_claims}
+                  unsupportedClaims={results.hallucination?.unsupported_claims}
+                />
+              </section>
+            )}
+          </>
+        ) : (
+          <section className="max-w-6xl mx-auto mb-16">
+            <BatchEvaluation />
           </section>
         )}
       </main>
